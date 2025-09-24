@@ -6,26 +6,34 @@ import (
 	"os"
 
 	"github.com/labstack/echo/v4"
+	"github.com/YYx00xZZ/try-12-go/internal/db"
 	"github.com/YYx00xZZ/try-12-go/internal/handler"
 )
 
 func main() {
-	// Read config from environment variables (12-factor principle)
+	// Config from env
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // sensible default
+		port = "8080"
 	}
 
-	// Create new Echo instance
-	e := echo.New()
+	// Connect to Postgres
+	pg, err := db.NewPostgresDB()
+	if err != nil {
+		log.Fatalf("failed to connect to Postgres: %v", err)
+	}
+	defer pg.Close()
 
-	// Middleware
+	// Echo app
+	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
 	e.Use(handler.RequestLogger)
 
 	// Routes
 	e.GET("/health", handler.HealthCheck)
+	userHandler := handler.NewUserHandler(pg)
+	e.GET("/users", userHandler.GetUsers)
 
 	// Start server
 	log.Printf("Starting server on port %s", port)
