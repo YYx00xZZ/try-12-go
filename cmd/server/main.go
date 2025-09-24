@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/labstack/echo/v4"
 	"github.com/YYx00xZZ/try-12-go/internal/db"
 	"github.com/YYx00xZZ/try-12-go/internal/handler"
+	"github.com/labstack/echo/v4"
 )
 
 func main() {
@@ -17,10 +17,10 @@ func main() {
 		port = "8080"
 	}
 
-	// Connect to Postgres
-	pg, err := db.NewPostgresDB()
+	// Connect to the configured database
+	pg, err := db.NewDB()
 	if err != nil {
-		log.Fatalf("failed to connect to Postgres: %v", err)
+		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer pg.Close()
 
