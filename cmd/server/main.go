@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/labstack/echo/v4"
 	"github.com/YYx00xZZ/try-12-go/internal/db"
 	"github.com/YYx00xZZ/try-12-go/internal/handler"
+	postgresrepo "github.com/YYx00xZZ/try-12-go/internal/repository/postgres"
+	"github.com/labstack/echo/v4"
 )
 
 func main() {
@@ -17,10 +18,10 @@ func main() {
 		port = "8080"
 	}
 
-	// Connect to Postgres
-	pg, err := db.NewPostgresDB()
+	// Connect to the configured database
+	pg, err := db.NewDB()
 	if err != nil {
-		log.Fatalf("failed to connect to Postgres: %v", err)
+		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer pg.Close()
 
@@ -32,7 +33,8 @@ func main() {
 
 	// Routes
 	e.GET("/health", handler.HealthCheck)
-	userHandler := handler.NewUserHandler(pg)
+	userRepo := postgresrepo.NewUserRepository(pg)
+	userHandler := handler.NewUserHandler(userRepo)
 	e.GET("/users", userHandler.GetUsers)
 
 	// Start server
