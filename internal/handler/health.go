@@ -12,12 +12,3 @@ func HealthCheck(c echo.Context) error {
 		"status": "ok",
 	})
 }
-
-// Simple request logger middleware
-func RequestLogger(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		// Log basic request info to stdout (12-factor logging)
-		c.Logger().Infof("%s %s", c.Request().Method, c.Request().RequestURI)
-		return next(c)
-	}
-}

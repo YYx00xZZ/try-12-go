@@ -9,6 +9,7 @@ import (
 	"github.com/YYx00xZZ/try-12-go/internal/handler"
 	postgresrepo "github.com/YYx00xZZ/try-12-go/internal/repository/postgres"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
@@ -29,7 +30,7 @@ func main() {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
-	e.Use(handler.RequestLogger)
+	e.Use(middleware.Logger())
 
 	// Routes
 	e.GET("/health", handler.HealthCheck)
