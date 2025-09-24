@@ -7,6 +7,7 @@ import (
 
 	"github.com/YYx00xZZ/try-12-go/internal/db"
 	"github.com/YYx00xZZ/try-12-go/internal/handler"
+	postgresrepo "github.com/YYx00xZZ/try-12-go/internal/repository/postgres"
 	"github.com/labstack/echo/v4"
 )
 
@@ -32,7 +33,8 @@ func main() {
 
 	// Routes
 	e.GET("/health", handler.HealthCheck)
-	userHandler := handler.NewUserHandler(pg)
+	userRepo := postgresrepo.NewUserRepository(pg)
+	userHandler := handler.NewUserHandler(userRepo)
 	e.GET("/users", userHandler.GetUsers)
 
 	// Start server
