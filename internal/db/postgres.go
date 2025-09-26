@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"strings"
@@ -70,7 +71,7 @@ func NewDB() (*sql.DB, error) {
 		return nil, err
 	}
 
-	fmt.Printf("Connecting to %s with DSN: %s\n", cfg.Driver, maskDSN(cfg.DSN))
+	slog.Info("connecting to database", slog.String("driver", cfg.Driver), slog.String("dsn", maskDSN(cfg.DSN)))
 
 	db, err := sql.Open(cfg.Driver, cfg.DSN)
 	if err != nil {
