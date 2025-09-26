@@ -57,7 +57,7 @@ func main() {
 				slog.String("method", v.Method),
 				slog.String("uri", v.URI),
 				slog.Int("status", v.Status),
-				slog.Duration("latency", v.Latency),
+				slog.String("latency", v.Latency.String()),
 				slog.String("remote_ip", v.RemoteIP),
 			}
 			if v.Error != nil {
