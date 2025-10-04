@@ -53,6 +53,18 @@ REST API sample with switchable persistence backends (Postgres or MongoDB), cont
 - Uses Go's `slog` with a JSON handler for concise structured output.
 - Request logs include method, URI, status, latency, and remote IP via Echo's request logger middleware.
 
+## Diagrams
+- Edit the Mermaid source in `Architecture.md`.
+- Render to SVG locally: `npx @mermaid-js/mermaid-cli@10.9.0 -i Architecture.md -o Architecture.svg -p puppeteer-config.json` (the config disables Chromium sandboxes).
+- Alternatively, use Docker: `docker run --rm -v $(pwd):/data minlag/mermaid-cli mmdc -i /data/Architecture.md -o /data/Architecture.svg`.
+## Adding Endpoints
+- Create or update the repository interface in `internal/repository` so handlers depend on abstractions rather than concrete databases.
+- Implement the repository for each backend under `internal/repository/postgres` and `internal/repository/mongo`, mirroring the shared interface.
+- Add a handler in `internal/handler` with `echo` logic and Swagger annotations (`@Summary`, `@Tags`, etc.) describing request/response shapes.
+- Register the route in `cmd/server/main.go` after wiring any required repositories.
+- Regenerate Swagger docs: `go run github.com/swaggo/swag/cmd/swag@v1.8.12 init -g cmd/server/main.go -o docs --parseInternal`.
+- Rebuild or restart the compose services so the new endpoint is available: `docker compose build app && docker compose up`.
+
 ## Useful Commands
 - Run migrations only (Postgres): `docker compose run --rm migrate`
 - Follow app logs: `docker compose logs -f app`
