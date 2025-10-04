@@ -8,9 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	mongodriver "go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 )
 
 type userDocument struct {
@@ -30,15 +27,10 @@ func NewUserRepository(collection *mongodriver.Collection) *UserRepository {
 
 // List fetches up to 10 users ordered by their id.
 func (r *UserRepository) List(ctx context.Context) ([]repository.User, error) {
-	ctx, span := otel.Tracer("repository.mongo").Start(ctx, "UserRepository.List")
-	defer span.End()
-
 	findOpts := options.Find().SetLimit(10).SetSort(bson.D{{Key: "id", Value: 1}})
 
 	cursor, err := r.collection.Find(ctx, bson.D{}, findOpts)
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
 		slog.Error("mongo find users failed", slog.Any("err", err))
 		return nil, err
 	}
@@ -48,8 +40,6 @@ func (r *UserRepository) List(ctx context.Context) ([]repository.User, error) {
 	for cursor.Next(ctx) {
 		var doc userDocument
 		if err := cursor.Decode(&doc); err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
 			slog.Error("decode mongo user failed", slog.Any("err", err))
 			return nil, err
 		}
@@ -57,13 +47,10 @@ func (r *UserRepository) List(ctx context.Context) ([]repository.User, error) {
 	}
 
 	if err := cursor.Err(); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
 		slog.Error("mongo cursor error", slog.Any("err", err))
 		return nil, err
 	}
 
-	span.SetAttributes(attribute.Int("repository.user.count", len(users)))
 	slog.Info("fetched users from mongo", slog.Int("count", len(users)))
 
 	return users, nil

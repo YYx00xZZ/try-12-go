@@ -11,7 +11,6 @@ import (
 	_ "github.com/YYx00xZZ/try-12-go/docs"
 	"github.com/YYx00xZZ/try-12-go/internal/db"
 	"github.com/YYx00xZZ/try-12-go/internal/handler"
-	"github.com/YYx00xZZ/try-12-go/internal/observability"
 	"github.com/YYx00xZZ/try-12-go/internal/repository"
 	mongorepo "github.com/YYx00xZZ/try-12-go/internal/repository/mongo"
 	postgresrepo "github.com/YYx00xZZ/try-12-go/internal/repository/postgres"
@@ -25,19 +24,10 @@ import (
 // @description API for managing users
 // @BasePath /
 func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true}))
+	slog.SetDefault(logger)
+
 	ctx := context.Background()
-	shutdown, logger, err := observability.Setup(ctx, "try-12-go")
-	if err != nil {
-		slog.Error("failed to set up observability", slog.Any("err", err))
-		os.Exit(1)
-	}
-	defer func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := shutdown(ctx); err != nil {
-			logger.Error("failed to cleanly shutdown observability", slog.Any("err", err))
-		}
-	}()
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -82,7 +72,7 @@ func main() {
 		collection := mongoClient.Database(mongoCfg.Database).Collection(mongoCfg.Collection)
 		userRepo = mongorepo.NewUserRepository(collection)
 	default:
-		logger.Error("unsupported DB_BACKEND", slog.String("backend", backend))
+		slog.Error("unsupported DB_BACKEND", slog.String("backend", backend))
 		os.Exit(1)
 	}
 
@@ -115,7 +105,6 @@ func main() {
 			return nil
 		},
 	}))
-	e.Use(observability.TraceMiddleware("try-12-go"))
 
 	e.GET("/docs/*", echoSwagger.WrapHandler)
 	e.GET("/health", handler.HealthCheck)

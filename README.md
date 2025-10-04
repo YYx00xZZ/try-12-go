@@ -49,6 +49,10 @@ REST API sample with switchable persistence backends (Postgres or MongoDB), cont
 | `MONGO_PORT` | `27017` | Published MongoDB port when using Docker Compose. |
 | `PORT` | `8080` | HTTP port exposed by the API container. |
 
+## Logging
+- Uses Go's `slog` with a JSON handler for concise structured output.
+- Request logs include method, URI, status, latency, and remote IP via Echo's request logger middleware.
+
 ## Useful Commands
 - Run migrations only (Postgres): `docker compose run --rm migrate`
 - Follow app logs: `docker compose logs -f app`
