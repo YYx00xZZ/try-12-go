@@ -17,6 +17,22 @@ services:
       retries: 5
       start_period: 5s
 
+  mongo:
+    image: mongo:7.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   migrate:
     build:
       context: .
@@ -29,6 +45,7 @@ services:
     environment:
       DB_HOST: db
       DATABASE_URL: ""
+      DB_BACKEND: postgres
     command: ["migrate"]
     restart: "no"
 
@@ -41,14 +58,18 @@ services:
         condition: service_completed_successfully
       db:
         condition: service_healthy
+      mongo:
+        condition: service_healthy
     env_file:
       - .env
     environment:
       DB_HOST: db
       DATABASE_URL: ""
+      MONGO_URI: mongodb://mongo:27017
     ports:
       - "${PORT:-8080}:8080"
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  mongo_data:

@@ -5,12 +5,15 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	_ "github.com/YYx00xZZ/try-12-go/docs"
 	"github.com/YYx00xZZ/try-12-go/internal/db"
 	"github.com/YYx00xZZ/try-12-go/internal/handler"
 	"github.com/YYx00xZZ/try-12-go/internal/observability"
+	"github.com/YYx00xZZ/try-12-go/internal/repository"
+	mongorepo "github.com/YYx00xZZ/try-12-go/internal/repository/mongo"
 	postgresrepo "github.com/YYx00xZZ/try-12-go/internal/repository/postgres"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -41,12 +44,51 @@ func main() {
 		port = "8080"
 	}
 
-	pg, err := db.NewDB()
-	if err != nil {
-		slog.Error("failed to connect to database", slog.Any("err", err))
+	backend := os.Getenv("DB_BACKEND")
+	if backend == "" {
+		backend = "postgres"
+	}
+	backend = strings.ToLower(backend)
+
+	var (
+		userRepo    repository.UserRepository
+		repoCleanup func()
+	)
+
+	switch backend {
+	case "postgres":
+		pg, err := db.NewDB()
+		if err != nil {
+			slog.Error("failed to connect to postgres", slog.Any("err", err))
+			os.Exit(1)
+		}
+		repoCleanup = func() {
+			pg.Close()
+		}
+		userRepo = postgresrepo.NewUserRepository(pg)
+	case "mongo":
+		mongoClient, mongoCfg, err := db.NewMongoClient(ctx)
+		if err != nil {
+			slog.Error("failed to connect to mongodb", slog.Any("err", err))
+			os.Exit(1)
+		}
+		repoCleanup = func() {
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := mongoClient.Disconnect(shutdownCtx); err != nil {
+				slog.Error("failed to disconnect mongodb", slog.Any("err", err))
+			}
+		}
+		collection := mongoClient.Database(mongoCfg.Database).Collection(mongoCfg.Collection)
+		userRepo = mongorepo.NewUserRepository(collection)
+	default:
+		logger.Error("unsupported DB_BACKEND", slog.String("backend", backend))
 		os.Exit(1)
 	}
-	defer pg.Close()
+
+	if repoCleanup != nil {
+		defer repoCleanup()
+	}
 
 	e := echo.New()
 	e.HideBanner = true
@@ -77,11 +119,10 @@ func main() {
 
 	e.GET("/docs/*", echoSwagger.WrapHandler)
 	e.GET("/health", handler.HealthCheck)
-	userRepo := postgresrepo.NewUserRepository(pg)
 	userHandler := handler.NewUserHandler(userRepo)
 	e.GET("/users", userHandler.GetUsers)
 
-	slog.Info("starting server", slog.String("port", port))
+	slog.Info("starting server", slog.String("port", port), slog.String("db_backend", backend))
 	if err := e.Start(":" + port); err != nil && err != http.ErrServerClosed {
 		slog.Error("server shutdown", slog.Any("err", err))
 		os.Exit(1)

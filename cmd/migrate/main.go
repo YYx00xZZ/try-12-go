@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/YYx00xZZ/try-12-go/internal/db"
@@ -29,6 +30,12 @@ func main() {
 			logger.Error("failed to cleanly shutdown observability", slog.Any("err", err))
 		}
 	}()
+
+	backend := strings.ToLower(os.Getenv("DB_BACKEND"))
+	if backend != "" && backend != "postgres" {
+		logger.Info("skipping migrations for non-postgres backend", slog.String("backend", backend))
+		return
+	}
 
 	cfg, err := db.LoadConfig()
 	if err != nil {
