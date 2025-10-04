@@ -7,14 +7,20 @@ import (
 	"os"
 	"time"
 
+	_ "github.com/YYx00xZZ/try-12-go/docs"
 	"github.com/YYx00xZZ/try-12-go/internal/db"
 	"github.com/YYx00xZZ/try-12-go/internal/handler"
 	"github.com/YYx00xZZ/try-12-go/internal/observability"
 	postgresrepo "github.com/YYx00xZZ/try-12-go/internal/repository/postgres"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
+// @title Try 12 Go API
+// @version 1.0
+// @description API for managing users
+// @BasePath /
 func main() {
 	ctx := context.Background()
 	shutdown, logger, err := observability.Setup(ctx, "try-12-go")
@@ -69,6 +75,7 @@ func main() {
 	}))
 	e.Use(observability.TraceMiddleware("try-12-go"))
 
+	e.GET("/docs/*", echoSwagger.WrapHandler)
 	e.GET("/health", handler.HealthCheck)
 	userRepo := postgresrepo.NewUserRepository(pg)
 	userHandler := handler.NewUserHandler(userRepo)

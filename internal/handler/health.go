@@ -6,9 +6,12 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// HealthCheck handler for liveness/readiness probe
+// HealthCheck reports the service availability.
+// @Summary Health status
+// @Tags health
+// @Produce json
+// @Success 200 {object} StatusResponse
+// @Router /health [get]
 func HealthCheck(c echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]string{
-		"status": "ok",
-	})
+	return c.JSON(http.StatusOK, StatusResponse{Status: "ok"})
 }

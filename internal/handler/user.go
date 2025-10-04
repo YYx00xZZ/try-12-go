@@ -19,6 +19,13 @@ func NewUserHandler(repo repository.UserRepository) *UserHandler {
 	return &UserHandler{repo: repo}
 }
 
+// GetUsers returns the first page of users.
+// @Summary List users
+// @Tags users
+// @Produce json
+// @Success 200 {array} repository.User
+// @Failure 500 {object} ErrorResponse
+// @Router /users [get]
 func (h *UserHandler) GetUsers(c echo.Context) error {
 	ctx, span := otel.Tracer("handler.user").Start(c.Request().Context(), "UserHandler.GetUsers")
 	defer span.End()
@@ -28,7 +35,7 @@ func (h *UserHandler) GetUsers(c echo.Context) error {
 		slog.Error("failed to list users", slog.Any("err", err))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 	}
 
 	span.SetAttributes(attribute.Int("user.count", len(users)))
